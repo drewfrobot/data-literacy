@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.114.1">
+
+
+<title>Wide versus Narrow Data Format - Using R - Data Literacy</title>
+<meta property="og:title" content="Wide versus Narrow Data Format - Using R - Data Literacy">
+
+
+  <link href='/favicon.ico' rel='icon' type='image/x-icon'/>
+
+
+
+  
+
+
+
+
+
+
+
+
+<link href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css' rel='stylesheet' type='text/css' />
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="/about/">About</a></li>
+    
+    <li><a href="https://github.com/drewfrobot/data-literacy">GitHub</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">7 min read</span>
+    
+
+    <h1 class="article-title">Wide versus Narrow Data Format - Using R</h1>
+
+    
+    <span class="article-date">2019-07-03</span>
+    
+
+    <div class="article-content">
+      <p>This workflow explores wide and narrow data formats, identifies in which circumstances each is useful and how to easily convert data from one to the other and back again.</p>
+<h2 id="setup">Setup</h2>
+<p>First up we need to extend base R by installing/loading some libraries.</p>
+<pre><code class="language-r">if (!require('ggplot2')) {
+  install.packages('ggplot2')
+  library('ggplot2')
+}
+if (!require('curl')) {
+  install.packages('curl')
+  library('curl')
+}
+if (!require('reshape2')) {
+  install.packages('reshape2')
+  library('reshape2')
+}
+</code></pre>
+<h2 id="workflow---library-statistics">Workflow - Library Statistics</h2>
+<p>Let&rsquo;s take the example of a hypothetical Library, and look at the statistics the front desk might collect. For example the desk staff might use an online form such as the Google Form shown below, tallying stats for various enquiry types over a given time period, then submitting the form at the end of that time period.</p>
+<p><img src="https://raw.githubusercontent.com/drewfrobot/data-literacy-workshops/master/data/Hypothetical_Library_Queries_Form.png" alt="image1"></p>
+<p>The form data is stored in a Google Spreadsheet shown below.</p>
+<p><img src="https://raw.githubusercontent.com/drewfrobot/data-literacy-workshops/master/data/Hypothetical_Library_Queries_Form_Spreadsheet.png" alt="image2"></p>
+<p>The following csv file is an exported version of the Google Spreadsheet above, and shows the statistics have been collected over six different time periods each day. Each submission details the date, time of day period, and a column for each enquiry category with a random generated tally.</p>
+<p>So, let&rsquo;s begin by importing the raw statistics into the R environment.</p>
+<pre><code class="language-r">df &lt;- read.csv(curl('https://raw.githubusercontent.com/drewfrobot/data-literacy-workshops/master/data/Hypothetical_Library_Queries.csv'))
+df[is.na(df)] &lt;- 0
+head(df[order(df$Date,df$Time),],10)
+</code></pre>
+<pre><code>##           Date      Time CategoryA CategoryB Borrowing Directions Equipment
+## 1768  1/1/2018 10am-12pm         0         0         0          0         0
+## 1769  1/1/2018 10am-12pm         0         0         0          0         0
+## 1770  1/1/2018  12pm-2pm         0         0         0         23         0
+## 1771  1/1/2018   2pm-4pm         0         0         0          0         0
+## 1772  1/1/2018   4pm-6pm         0         0         9          0         0
+## 1773  1/1/2018   6pm-8pm         0        23         0          0         0
+## 1766  1/1/2018  8am-10am         0         0         8          0         0
+## 1767  1/1/2018  8am-10am         0         0         7          0        33
+## 1854 1/10/2018 10am-12pm         0        24         0          0        38
+## 1855 1/10/2018  12pm-2pm         0         0         0          0         5
+##      Referral Reference Other Catalogue
+## 1768        0         8     0         0
+## 1769        0         0     0         0
+## 1770        0         0     0         0
+## 1771        0         0     0         0
+## 1772        0         0     0         0
+## 1773        0         0     0         0
+## 1766       28         0     0         0
+## 1767       31         0     0         0
+## 1854        0         0     0         0
+## 1855        0         0     0         0
+</code></pre>
+<p>They are a classic example of a wide, response data format. Easily read by people, not so easily read by machines eg Skynet.</p>
+<p>The categories of each interaction each have their own column. It is a presentation format, once again easy for people to read but for a machine to read and perform an analysis and to take advantage of powerful analysis tools it needs to be converted to tall or long or narrow format.</p>
+<p>This can easily be achieved for example using a &lsquo;melt&rsquo; function in the reshape library.</p>
+<pre><code class="language-r">df2=melt(df,id_vars=c('Timestamp','Date','Time'),na.rm=TRUE)
+</code></pre>
+<pre><code>## Using Date, Time as id variables
+</code></pre>
+<pre><code class="language-r">head(df2[order(df2$Date,df2$Time),],20)
+</code></pre>
+<pre><code>##           Date      Time   variable value
+## 1768  1/1/2018 10am-12pm  CategoryA     0
+## 1769  1/1/2018 10am-12pm  CategoryA     0
+## 5374  1/1/2018 10am-12pm  CategoryB     0
+## 5375  1/1/2018 10am-12pm  CategoryB     0
+## 8980  1/1/2018 10am-12pm  Borrowing     0
+## 8981  1/1/2018 10am-12pm  Borrowing     0
+## 12586 1/1/2018 10am-12pm Directions     0
+## 12587 1/1/2018 10am-12pm Directions     0
+## 16192 1/1/2018 10am-12pm  Equipment     0
+## 16193 1/1/2018 10am-12pm  Equipment     0
+## 19798 1/1/2018 10am-12pm   Referral     0
+## 19799 1/1/2018 10am-12pm   Referral     0
+## 23404 1/1/2018 10am-12pm  Reference     8
+## 23405 1/1/2018 10am-12pm  Reference     0
+## 27010 1/1/2018 10am-12pm      Other     0
+## 27011 1/1/2018 10am-12pm      Other     0
+## 30616 1/1/2018 10am-12pm  Catalogue     0
+## 30617 1/1/2018 10am-12pm  Catalogue     0
+## 1770  1/1/2018  12pm-2pm  CategoryA     0
+## 5376  1/1/2018  12pm-2pm  CategoryB     0
+</code></pre>
+<p>The narrow format is often referred to as EAV or Entity-attribute-value format. Here the entity is the date/time period event, and the attribute is the query category. Every line is simply an entity with an attribute and a value, which is much easier for machines to deal with.</p>
+<p>Now we can perform an analysis and present results. Let&rsquo;s say we would like to know on average which time periods on which weekdays are the busiest at the enquiries desk. Firstly, let&rsquo;s make convert the Date column to Date format add a column which gives the day of the week. Here 0 is Sunday and 6 is Saturday. The day of the week will become part of the entity component.</p>
+<pre><code class="language-r">df2$Date &lt;- as.Date(df2$Date,&quot;%m/%d/%Y&quot;)
+df2$dayofweek &lt;- format(as.Date(df2$Date),&quot;%w&quot;)
+head(df2[order(df2$Date,df2$Time),],10)
+</code></pre>
+<pre><code>##             Date      Time   variable value dayofweek
+## 2     2017-07-01 10am-12pm  CategoryA     0         6
+## 3608  2017-07-01 10am-12pm  CategoryB     0         6
+## 7214  2017-07-01 10am-12pm  Borrowing    30         6
+## 10820 2017-07-01 10am-12pm Directions     0         6
+## 14426 2017-07-01 10am-12pm  Equipment    28         6
+## 18032 2017-07-01 10am-12pm   Referral     0         6
+## 21638 2017-07-01 10am-12pm  Reference     0         6
+## 25244 2017-07-01 10am-12pm      Other     0         6
+## 28850 2017-07-01 10am-12pm  Catalogue     0         6
+## 4     2017-07-01  12pm-2pm  CategoryA     5         6
+</code></pre>
+<p>Now we can perform an aggregation to find the average (median) number of interactions per day of week and time period. Here we pivot or recast the data back into a wide format for people to view the summary or result.</p>
+<pre><code class="language-r">df3 &lt;- aggregate(value~Date+Time+dayofweek,df2,sum)
+df4 &lt;- aggregate(value~Time+dayofweek,df3,median)
+df5 &lt;- dcast(df4,Time~dayofweek,value.var=&quot;value&quot;)
+df5
+</code></pre>
+<pre><code>##        Time    0    1    2  3    4    5    6
+## 1 10am-12pm 78.0 59.0 67.0 66 56.0 55.0 63.5
+## 2  12pm-2pm 74.5 71.0 69.0 60 51.0 74.0 60.5
+## 3   2pm-4pm 79.5 84.0 61.5 68 57.5 44.5 75.0
+## 4   4pm-6pm 53.0 54.5 69.5 58 82.5 33.0 79.0
+## 5   6pm-8pm 37.0 28.0 62.0 65 51.0 39.0 58.0
+## 6  8am-10am 64.0 67.5 55.0 68 50.5 65.5 62.0
+</code></pre>
+<p>Let&rsquo;s do a quick, no nonsense graph to display the table.</p>
+<pre><code class="language-r">p&lt;-ggplot(df4, aes(x=Time, y=value,fill=dayofweek)) +
+  geom_bar(stat=&quot;identity&quot;,position=position_dodge())+coord_fixed(ratio = 0.1)
+print(p)
+</code></pre>
+<img src="/2019/07/03/wide-versus-narrow-data-format-using-r/index_files/figure-html/unnamed-chunk-6-1.png" width="672" />
+<p>What if we wanted to show the interactions for each category over a particular month, say March 2018.</p>
+<p>The raw data is hidden away in a table, there&rsquo;s no real need to look at it constantly, we can simply pose different questions and run any subsequent analysis without changing the raw data.</p>
+<p>Here is a table view of the interactions per category for March 2018. Here we once again recast the data back into a wide format to view the results.</p>
+<pre><code class="language-r">df6=df2[format.Date(df2$Date, &quot;%m&quot;)==&quot;03&quot; &amp; format.Date(df2$Date, &quot;%y&quot;)==&quot;18&quot;,]
+df7 &lt;- aggregate(value~Date+variable,df6,sum)
+df8 &lt;- dcast(df7,variable~Date,value.var=&quot;value&quot;)
+df8
+</code></pre>
+<pre><code>##     variable 2018-03-03 2018-03-04 2018-03-05 2018-03-06 2018-03-07 2018-03-10
+## 1  CategoryA         43         13          0          0          0         14
+## 2  CategoryB         20         49          0          0          8         34
+## 3  Borrowing          0          0          0         47          0          0
+## 4 Directions          0          0          0         76          0          0
+## 5  Equipment         60          0          0          0         19         15
+## 6   Referral          0         13          0         70         36          0
+## 7  Reference          0          0          0          0          0          4
+## 8      Other         22         55          0          3         22          4
+## 9  Catalogue          0          0          0          0         15          0
+##   2018-03-11 2018-03-12 2018-03-13 2018-03-14 2018-03-17 2018-03-18 2018-03-19
+## 1         14         69          0          0         15          0         23
+## 2          7          0          4         30          0         52         55
+## 3          0          0          0        101          0          0         21
+## 4         38          0          0         33         38         73          0
+## 5         50         35          0         30         43         40          0
+## 6         26         12          0          9          0         23          0
+## 7         33          0         36          0         21          0         31
+## 8          0         19         31          0          9          0         11
+## 9         35         26          0          5          4          9         28
+##   2018-03-20
+## 1         33
+## 2          0
+## 3          0
+## 4         26
+## 5          4
+## 6         22
+## 7         24
+## 8         33
+## 9          0
+</code></pre>
+<p>Once again, let&rsquo;s do a quick, no nonsense graph to display the table.</p>
+<pre><code class="language-r">df9 &lt;-rbind(df7[df7$variable=='Catalogue',],df7[df7$variable=='Reference',])
+p&lt;-ggplot(df9, aes(x=Date, y=value,group=variable)) +
+  geom_line(aes(linetype=variable, color=variable))
+print(p)
+</code></pre>
+<img src="/2019/07/03/wide-versus-narrow-data-format-using-r/index_files/figure-html/unnamed-chunk-8-1.png" width="672" />
+<p>So in summary, wide format, whilst ideal for survey responses and displaying data to people, is not an ideal format to work with when using data analysis tools, such as R. Converting to narrow data format allows the use of very powerful tools, and then the results can be pivoted or recast back into a wide format which is then easy for people to read and ponder.</p>
+<h2 id="housekeeping">Housekeeping</h2>
+<p>This is an <a href="http://rmarkdown.rstudio.com">R Markdown</a> Notebook. When you execute code within the notebook, the results appear beneath the code.</p>
+<p>Try executing this chunk by clicking the <em>Run</em> button within the chunk or by placing your cursor inside it and pressing <em>Ctrl+Shift+Enter</em>.</p>
+<p>Add a new chunk by clicking the <em>Insert Chunk</em> button on the toolbar or by pressing <em>Ctrl+Alt+I</em>.</p>
+<p>When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the <em>Preview</em> button or press <em>Ctrl+Shift+K</em> to preview the HTML file).</p>
+<p>The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike <em>Knit</em>, <em>Preview</em> does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.</p>
+
+    </div>
+  </article>
+
+  
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" alt="Img link to Hugo website" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+    
+  </body>
+</html>
+

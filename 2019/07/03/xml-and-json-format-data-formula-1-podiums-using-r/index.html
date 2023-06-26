@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.114.1">
+
+
+<title>XML and JSON Format Data - Formula 1 Podiums using R - Data Literacy</title>
+<meta property="og:title" content="XML and JSON Format Data - Formula 1 Podiums using R - Data Literacy">
+
+
+  <link href='/favicon.ico' rel='icon' type='image/x-icon'/>
+
+
+
+  
+
+
+
+
+
+
+
+
+<link href='//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css' rel='stylesheet' type='text/css' />
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/%3cnil%3e"
+         width=""
+         height=""
+         alt="">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/">Home</a></li>
+    
+    <li><a href="/about/">About</a></li>
+    
+    <li><a href="https://github.com/drewfrobot/data-literacy">GitHub</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">11 min read</span>
+    
+
+    <h1 class="article-title">XML and JSON Format Data - Formula 1 Podiums using R</h1>
+
+    
+    <span class="article-date">2019-07-03</span>
+    
+
+    <div class="article-content">
+      <script src="/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/index_files/htmlwidgets/htmlwidgets.js"></script>
+<link href="/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/index_files/vis/vis-network.min.css" rel="stylesheet" />
+<script src="/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/index_files/vis/vis-network.min.js"></script>
+<script src="/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/index_files/visNetwork-binding/visNetwork.js"></script>
+<p>A lot of data available on the web, via download but more particularly via API’s, is in XML or JSON format. These formats are not tabular like data frames or tables, but are hierarchical, serialised, and a little trickier to work with. They are not unlike the list structure in R, consisting of lists of lists and can be deeply nested.</p>
+<p>The purpose of this notebook is to import XML and JSON format data into R and transform it into data frame format to use with the regular suite of tools available in R.</p>
+<h2 id="loading-libraries-and-options">Loading Libraries and Options</h2>
+<pre><code class="language-r">if (!require('readr')) {
+  install.packages('readr')
+  library('readr')
+}
+if (!require('curl')) {
+  install.packages('curl')
+  library('curl')
+}
+if (!require('xml2')) {
+  install.packages('xml2')
+  library('xml2')
+}
+if (!require('plyr')) {
+  install.packages('plyr')
+  library('plyr')
+}
+if (!require('stringr')) {
+  install.packages('stringr')
+  library('stringr')
+}
+if (!require('data.table')) {
+  install.packages('data.table')
+  library('data.table')
+}
+if (!require('rjson')) {
+  install.packages('rjson')
+  library('rjson')
+}
+if (!require('visNetwork')) {
+  install.packages('visNetwork')
+  library('visNetwork', character.only=T)
+}
+
+options(stringsAsFactors = FALSE)
+</code></pre>
+<h2 id="the-data---preview">The Data - Preview</h2>
+<p>The very good people at Ergast (<a href="https://ergast.com/mrd/">https://ergast.com/mrd/</a>) have provided an API which gives access to a lot of data relating to Formula 1 races from 1950 through to today. Terms of Use are available at <a href="https://ergast.com/mrd/terms/">https://ergast.com/mrd/terms/</a>.</p>
+<p>The API is queried by URL formatted requests, and the returned data is in XML or JSON format.</p>
+<p>Let’s have a look at the raw data from the API calls. Head over to <a href="https://codebeautify.org/xmlviewer">https://codebeautify.org/xmlviewer</a> and <a href="https://codebeautify.org/jsonviewer">https://codebeautify.org/jsonviewer</a> and load the API calls <a href="https://ergast.com/api/f1/2014/results/1.xml">https://ergast.com/api/f1/2014/results/1.xml</a> and <a href="https://ergast.com/api/f1/2014/results/1.json">https://ergast.com/api/f1/2014/results/1.json</a> respectively to get a “prettier” picture.</p>
+<p>An excerpt of the XML code is</p>
+<pre><code>		&lt;ResultsList&gt;
+			&lt;Result number=&quot;6&quot; position=&quot;1&quot; positionText=&quot;1&quot; points=&quot;25&quot;&gt;
+				&lt;Driver driverId=&quot;rosberg&quot; code=&quot;ROS&quot; url=&quot;http://en.wikipedia.org/wiki/Nico_Rosberg&quot;&gt;
+					&lt;PermanentNumber&gt;6&lt;/PermanentNumber&gt;
+					&lt;GivenName&gt;Nico&lt;/GivenName&gt;
+					&lt;FamilyName&gt;Rosberg&lt;/FamilyName&gt;
+					&lt;DateOfBirth&gt;1985-06-27&lt;/DateOfBirth&gt;
+					&lt;Nationality&gt;German&lt;/Nationality&gt;
+				&lt;/Driver&gt;
+</code></pre>
+<p>within the <Driver> “element”, the driverId and code data are stored as “attributes”“, whereas the GivenName and FamilyName are given as”text” content.</p>
+<p>An excerpt of the JSON code is</p>
+<pre><code>     &quot;Results&quot;: [
+        {
+          &quot;number&quot;: &quot;6&quot;,
+          &quot;position&quot;: &quot;1&quot;,
+          &quot;positionText&quot;: &quot;1&quot;,
+          &quot;points&quot;: &quot;25&quot;,
+          &quot;Driver&quot;: {
+            &quot;driverId&quot;: &quot;rosberg&quot;,
+            &quot;permanentNumber&quot;: &quot;6&quot;,
+            &quot;code&quot;: &quot;ROS&quot;,
+            &quot;url&quot;: &quot;http://en.wikipedia.org/wiki/Nico_Rosberg&quot;,
+            &quot;givenName&quot;: &quot;Nico&quot;,
+            &quot;familyName&quot;: &quot;Rosberg&quot;,
+            &quot;dateOfBirth&quot;: &quot;1985-06-27&quot;,
+            &quot;nationality&quot;: &quot;German&quot;
+</code></pre>
+<p>JSON is a mixture of arrays (eg Results) and objects (eg Driver) which have key/value pairs (eg key “driverId” paired with value “rosberg”)</p>
+<p>The nested, serial, hierarchical, list of list structure of XML and JSON is quite evident.</p>
+<p>JSON uses arrays to structure plural instances of the same object, XML does not. This can cause difficulties in using JSON, where the format varies between singular and plural instances.</p>
+<h2 id="the-data---xml">The Data - XML</h2>
+<p>So let’s get some data. The following code queries the API for a small number of years for drivers who finished on the podium i.e. they finished first, second or third. The API seems to be limited to a single year and single podium position per API call.</p>
+<p>The code is basically nested ‘for loops’, one for the year and one for the podium postion. Each API call is returned and stored in an array/list. The R function “paste0” structures each API call for the different years/podiums.</p>
+<p>This call is for data in XML format, making use of the ‘xml2’ library.</p>
+<pre><code class="language-r">start_year &lt;- 2014
+finish_year &lt;- 2019
+xml_results_temp &lt;- list()
+for (i in (start_year:finish_year)) {
+	for (j in (1:3)) {
+		xml_results_temp[[(i-start_year)*3+j]] &lt;- read_xml(curl(paste0(&quot;http://ergast.com/api/f1/&quot;,i,&quot;/results/&quot;,j,&quot;.xml&quot;)))
+		Sys.sleep(1)
+	}
+}
+</code></pre>
+<p>Before we go any further we will remove the namespace details from the xml, it won’t be needed for our purposes.</p>
+<pre><code class="language-r">xml_results_temp_ns &lt;- lapply(xml_results_temp,xml_ns_strip)
+</code></pre>
+<p>There are many different methods to obtain the data from an XML data set. There are functions which have the capacity to transform an XML data set directly to a data frame. In the author’s experience these more often than not hit hurdles, and they find the following approach to be the simplest overall and has been easily applied to all data sets encountered so far. Inevitably only a small amount of the data is usually used, and a targeted approach retrieving only what is needed is quite efficient.</p>
+<p>lapply is a powerful function in r, essentially looping over a list and performing the same function to each element of the list. It is base R code and much faster than using ‘for loops’. xml_find_all finds all elements matching a “path” eg “.//Result//Driver”. The nomenclature used is from the XPath specification. The addition of the “.” at the start means the path can occur anywhere in the XML, not bound to the root node. The functions xml_attr and xml_text then extract the attribute or text value, and all of this is stored in a list.</p>
+<pre><code class="language-r">xml_results_edit &lt;- lapply(xml_results_temp_ns, function (x)
+	{
+		list(
+				season=xml_attr(xml_find_all(x,&quot;.//Race&quot;),&quot;season&quot;),
+				round=xml_attr(xml_find_all(x,&quot;.//Race&quot;),&quot;round&quot;),
+				Locality=xml_text(xml_find_all(x,&quot;.//Circuit//Location//Locality&quot;),&quot;Locality&quot;),
+				Country=xml_text(xml_find_all(x,&quot;.//Circuit//Location//Country&quot;),&quot;Country&quot;),
+				Date=xml_text(xml_find_all(x,&quot;.//Date&quot;),&quot;Date&quot;),
+				finishposition=xml_attr(xml_find_all(x,&quot;.//Result&quot;),&quot;position&quot;),
+				driverId=xml_attr(xml_find_all(x,&quot;.//Result//Driver&quot;),&quot;driverId&quot;),
+				drivercode=xml_attr(xml_find_all(x,&quot;.//Result//Driver&quot;),&quot;code&quot;),
+				driverGivenName=xml_text(xml_find_all(x,&quot;.//Result//Driver//GivenName&quot;),&quot;GivenName&quot;),
+				driverFamilyName=xml_text(xml_find_all(x,&quot;.//Result//Driver//FamilyName&quot;),&quot;FamilyName&quot;),
+				driverNationality=xml_text(xml_find_all(x,&quot;.//Result//Driver//Nationality&quot;),&quot;Nationality&quot;),
+				constructorId=xml_attr(xml_find_all(x,&quot;.//Result//Constructor&quot;),&quot;constructorId&quot;),
+				constructorName=xml_text(xml_find_all(x,&quot;.//Result//Constructor//Name&quot;),&quot;Name&quot;),
+				constructorNationality=xml_text(xml_find_all(x,&quot;.//Result//Constructor//Nationality&quot;),&quot;Nationality&quot;)
+		)
+	}
+)
+</code></pre>
+<p>This gives a list of lists, and to transform this to a data frame all that is needed is the powerful ldply function from the plyr library, which unfolds the list neatly into a data frame.</p>
+<pre><code class="language-r">xml_results_edit_ldply &lt;- ldply(xml_results_edit,data.frame)
+head(xml_results_edit_ldply,10)
+</code></pre>
+<pre><code>##    season round     Locality   Country       Date finishposition  driverId
+## 1    2014     1    Melbourne Australia 2014-03-16              1   rosberg
+## 2    2014     2 Kuala Lumpur  Malaysia 2014-03-30              1  hamilton
+## 3    2014     3       Sakhir   Bahrain 2014-04-06              1  hamilton
+## 4    2014     4     Shanghai     China 2014-04-20              1  hamilton
+## 5    2014     5     Montmeló     Spain 2014-05-11              1  hamilton
+## 6    2014     6  Monte-Carlo    Monaco 2014-05-25              1   rosberg
+## 7    2014     7     Montreal    Canada 2014-06-08              1 ricciardo
+## 8    2014     8    Spielberg   Austria 2014-06-22              1   rosberg
+## 9    2014     9  Silverstone        UK 2014-07-06              1  hamilton
+## 10   2014    10   Hockenheim   Germany 2014-07-20              1   rosberg
+##    drivercode driverGivenName driverFamilyName driverNationality constructorId
+## 1         ROS            Nico          Rosberg            German      mercedes
+## 2         HAM           Lewis         Hamilton           British      mercedes
+## 3         HAM           Lewis         Hamilton           British      mercedes
+## 4         HAM           Lewis         Hamilton           British      mercedes
+## 5         HAM           Lewis         Hamilton           British      mercedes
+## 6         ROS            Nico          Rosberg            German      mercedes
+## 7         RIC          Daniel        Ricciardo        Australian      red_bull
+## 8         ROS            Nico          Rosberg            German      mercedes
+## 9         HAM           Lewis         Hamilton           British      mercedes
+## 10        ROS            Nico          Rosberg            German      mercedes
+##    constructorName constructorNationality
+## 1         Mercedes                 German
+## 2         Mercedes                 German
+## 3         Mercedes                 German
+## 4         Mercedes                 German
+## 5         Mercedes                 German
+## 6         Mercedes                 German
+## 7         Red Bull               Austrian
+## 8         Mercedes                 German
+## 9         Mercedes                 German
+## 10        Mercedes                 German
+</code></pre>
+<p>That looks a lot more familiar!</p>
+<h2 id="the-data---json">The Data - JSON</h2>
+<p>Now for the same data in JSON format, making use of the ‘rjson’ library. Often keeping the JSON in full list of list format makes further processing easier.</p>
+<pre><code class="language-r">start_year &lt;- 2014
+finish_year &lt;- 2019
+json_results &lt;- list()
+for (i in (start_year:finish_year)) {
+	for (j in (1:3)) {
+		json_results[[(i-start_year)*3+j]] &lt;- fromJSON(file=URLencode(paste0(&quot;http://ergast.com/api/f1/&quot;,i,&quot;/results/&quot;,j,&quot;.json&quot;)))
+		Sys.sleep(1)
+	}
+}
+</code></pre>
+<p>The approach here is to use the powerful ldply function to unfold each element of the list to a data frame, use lapply to ‘apply’ ldply to each element, then use rbindlist from the data.table library to join all of the individual data frames together. All in one command!</p>
+<pre><code class="language-r">json_results_ldply &lt;- rbindlist(lapply(json_results, function (x) ldply(x[[&quot;MRData&quot;]][[&quot;RaceTable&quot;]][[&quot;Races&quot;]],data.frame)))
+</code></pre>
+<p>All that’s left to do is to keep only the columns we need and to update the column names to match the XML version.</p>
+<pre><code class="language-r">json_results_ldply_edit &lt;- json_results_ldply[,c(&quot;season&quot;,&quot;round&quot;,&quot;Circuit.Location.locality&quot;,&quot;Circuit.Location.country&quot;,&quot;date&quot;,&quot;Results.position&quot;,&quot;Results.Driver.driverId&quot;,&quot;Results.Driver.code&quot;,&quot;Results.Driver.givenName&quot;,&quot;Results.Driver.familyName&quot;,&quot;Results.Driver.nationality&quot;,&quot;Results.Constructor.constructorId&quot;,&quot;Results.Constructor.name&quot;,&quot;Results.Constructor.nationality&quot;)]
+colnames(json_results_ldply_edit) &lt;- c(&quot;season&quot;,&quot;round&quot;,&quot;Locality&quot;,&quot;Country&quot;,&quot;Date&quot;,&quot;finishposition&quot;,&quot;driverId&quot;,&quot;drivercode&quot;,&quot;driverGivenName&quot;,&quot;driverFamilyName&quot;,&quot;driverNationality&quot;,&quot;constructorId&quot;,&quot;constructorName&quot;,&quot;constructorNationality&quot;)
+</code></pre>
+<p>Let’s check it out.</p>
+<pre><code class="language-r">head(json_results_ldply_edit,10)
+</code></pre>
+<pre><code>##     season round     Locality   Country       Date finishposition  driverId
+##  1:   2014     1    Melbourne Australia 2014-03-16              1   rosberg
+##  2:   2014     2 Kuala Lumpur  Malaysia 2014-03-30              1  hamilton
+##  3:   2014     3       Sakhir   Bahrain 2014-04-06              1  hamilton
+##  4:   2014     4     Shanghai     China 2014-04-20              1  hamilton
+##  5:   2014     5     Montmeló     Spain 2014-05-11              1  hamilton
+##  6:   2014     6  Monte-Carlo    Monaco 2014-05-25              1   rosberg
+##  7:   2014     7     Montreal    Canada 2014-06-08              1 ricciardo
+##  8:   2014     8    Spielberg   Austria 2014-06-22              1   rosberg
+##  9:   2014     9  Silverstone        UK 2014-07-06              1  hamilton
+## 10:   2014    10   Hockenheim   Germany 2014-07-20              1   rosberg
+##     drivercode driverGivenName driverFamilyName driverNationality constructorId
+##  1:        ROS            Nico          Rosberg            German      mercedes
+##  2:        HAM           Lewis         Hamilton           British      mercedes
+##  3:        HAM           Lewis         Hamilton           British      mercedes
+##  4:        HAM           Lewis         Hamilton           British      mercedes
+##  5:        HAM           Lewis         Hamilton           British      mercedes
+##  6:        ROS            Nico          Rosberg            German      mercedes
+##  7:        RIC          Daniel        Ricciardo        Australian      red_bull
+##  8:        ROS            Nico          Rosberg            German      mercedes
+##  9:        HAM           Lewis         Hamilton           British      mercedes
+## 10:        ROS            Nico          Rosberg            German      mercedes
+##     constructorName constructorNationality
+##  1:        Mercedes                 German
+##  2:        Mercedes                 German
+##  3:        Mercedes                 German
+##  4:        Mercedes                 German
+##  5:        Mercedes                 German
+##  6:        Mercedes                 German
+##  7:        Red Bull               Austrian
+##  8:        Mercedes                 German
+##  9:        Mercedes                 German
+## 10:        Mercedes                 German
+</code></pre>
+<h2 id="the-podiums-network-visualisation">The Podiums Network Visualisation</h2>
+<p>To create the visualisation using the visNetwork tool, two data frames are needed, describing the “nodes” and “edges”” respectively. The nodes will represent drivers, the bigger the circle the more individual podiums, and hovering over the node will give the drivers full name and exact number of podiums. The edges will represent where two drivers have shared a podium, hovering over will give the number of shared podiums.</p>
+<p>We will use the XML produced data frame, however the JSON could easily be used too - they are identical.</p>
+<pre><code class="language-r">results_vis &lt;- xml_results_edit_ldply
+</code></pre>
+<p>OK, let’s start with the nodes data frame. First up, identify the unique drivers.</p>
+<pre><code class="language-r">results_ids &lt;- unique(results_vis[, c(&quot;driverId&quot;,&quot;driverGivenName&quot;,&quot;driverFamilyName&quot;,&quot;driverNationality&quot;,&quot;drivercode&quot;)])
+head(results_ids,5)
+</code></pre>
+<pre><code>##           driverId driverGivenName driverFamilyName driverNationality
+## 1          rosberg            Nico          Rosberg            German
+## 2         hamilton           Lewis         Hamilton           British
+## 7        ricciardo          Daniel        Ricciardo        Australian
+## 20 kevin_magnussen           Kevin        Magnussen            Danish
+## 28          bottas        Valtteri           Bottas           Finnish
+##    drivercode
+## 1         ROS
+## 2         HAM
+## 7         RIC
+## 20        MAG
+## 28        BOT
+</code></pre>
+<p>Next up, generate the driver combination pairs, by merging the driver data frame with itself and keeping the combinations where the first driver’s name is before the second driver’s name.</p>
+<pre><code class="language-r">results_ids_merge &lt;- merge(results_ids$driverId,results_ids$driverId)
+results_ids_merge_edit &lt;- results_ids_merge[results_ids_merge$x&lt;results_ids_merge$y,]
+head(results_ids_merge_edit,5)
+</code></pre>
+<pre><code>##                 x       y
+## 2        hamilton rosberg
+## 3       ricciardo rosberg
+## 4 kevin_magnussen rosberg
+## 5          bottas rosberg
+## 6          alonso rosberg
+</code></pre>
+<p>For each individual driver the total podiums are summed using the table function, column names updated and full driver details attached via the merge function</p>
+<pre><code class="language-r">results_ids_count &lt;- as.data.frame(table(results_vis$driverId))
+colnames(results_ids_count) &lt;- c(&quot;driverId&quot;,&quot;podiums&quot;)
+results_ids_count_names &lt;- merge(results_ids_count,results_ids)
+head(results_ids_count_names,5)
+</code></pre>
+<pre><code>##   driverId podiums driverGivenName driverFamilyName driverNationality
+## 1   alonso       2        Fernando           Alonso           Spanish
+## 2   bottas      45        Valtteri           Bottas           Finnish
+## 3   button       1          Jenson           Button           British
+## 4    gasly       1          Pierre            Gasly            French
+## 5 grosjean       1          Romain         Grosjean            French
+##   drivercode
+## 1        ALO
+## 2        BOT
+## 3        BUT
+## 4        GAS
+## 5        GRO
+</code></pre>
+<p>The visNetwork tool requires a unique numerical reference for each driver, so let’s add one.</p>
+<pre><code class="language-r">results_ids_count_names$id &lt;- seq.int(nrow(results_ids_count_names))
+</code></pre>
+<p>The nodes data frame needs a numerical id, a fixed label (driverId) and a hover title (Full Name and Ind. Podiums)</p>
+<pre><code class="language-r">nodes &lt;- data.frame(id=results_ids_count_names$id,label=results_ids_count_names$driverId,title=paste(results_ids_count_names$driverGivenName,results_ids_count_names$driverFamilyName,&quot;-&quot;,results_ids_count_names$podiums,&quot;podiums&quot;,sep=&quot; &quot;),value=results_ids_count_names$podiums)
+head(nodes,5)
+</code></pre>
+<pre><code>##   id    label                        title value
+## 1  1   alonso  Fernando Alonso - 2 podiums     2
+## 2  2   bottas Valtteri Bottas - 45 podiums    45
+## 3  3   button    Jenson Button - 1 podiums     1
+## 4  4    gasly     Pierre Gasly - 1 podiums     1
+## 5  5 grosjean  Romain Grosjean - 1 podiums     1
+</code></pre>
+<p>Now onto the edges. The strategy here is to split the data frame into a big list where each element represents a grand prix and contains the three podium drivers, then add the three possible podium pairs sorted alphabetically in a new pairings list.</p>
+<pre><code class="language-r">results_combo &lt;- lapply(split(results_vis,results_vis$Date), function(x) {
+	list(
+		paste(sort(x[[&quot;driverId&quot;]])[[1]],sort(x[[&quot;driverId&quot;]])[[2]],sep=&quot;--&quot;),
+		paste(sort(x[[&quot;driverId&quot;]])[[1]],sort(x[[&quot;driverId&quot;]])[[3]],sep=&quot;--&quot;),
+		paste(sort(x[[&quot;driverId&quot;]])[[2]],sort(x[[&quot;driverId&quot;]])[[3]],sep=&quot;--&quot;)
+		)
+	}
+)
+</code></pre>
+<p>Then ‘melt’ (data.table) the pairings list, count up each individual pairing, then create columns for each individual driver to match with the nodes data set.</p>
+<pre><code class="language-r">results_combo_melt &lt;- reshape2::melt(results_combo)
+results_combo_melt_count &lt;- as.data.frame(table(results_combo_melt$value))
+results_combo_melt_count_edit &lt;- cbind(results_combo_melt_count,str_split_fixed(results_combo_melt_count$Var1,&quot;--&quot;,2))
+head(results_combo_melt_count_edit,5)
+</code></pre>
+<pre><code>##                Var1 Freq      1         2
+## 1  alonso--hamilton    2 alonso  hamilton
+## 2 alonso--ricciardo    1 alonso ricciardo
+## 3   alonso--rosberg    1 alonso   rosberg
+## 4  bottas--hamilton   35 bottas  hamilton
+## 5   bottas--leclerc    7 bottas   leclerc
+</code></pre>
+<p>Then merge the individual driver details with the pairings data frame.</p>
+<pre><code class="language-r">results_combo_melt_count_edit_ids &lt;- merge(results_combo_melt_count_edit,results_ids_count_names,by.x=&quot;1&quot;,by.y=&quot;driverId&quot;)
+results_combo_melt_count_edit_ids2 &lt;- merge(results_combo_melt_count_edit_ids,results_ids_count_names,by.x=&quot;2&quot;,by.y=&quot;driverId&quot;)
+head(results_combo_melt_count_edit_ids2,5)
+</code></pre>
+<pre><code>##                 2        1                    Var1 Freq podiums.x
+## 1        hamilton   alonso        alonso--hamilton    2         2
+## 2        hamilton   bottas        bottas--hamilton   35        45
+## 3        hamilton grosjean      grosjean--hamilton    1         1
+## 4 kevin_magnussen   button button--kevin_magnussen    1         1
+## 5         leclerc hamilton       hamilton--leclerc    8        97
+##   driverGivenName.x driverFamilyName.x driverNationality.x drivercode.x id.x
+## 1          Fernando             Alonso             Spanish          ALO    1
+## 2          Valtteri             Bottas             Finnish          BOT    2
+## 3            Romain           Grosjean              French          GRO    5
+## 4            Jenson             Button             British          BUT    3
+## 5             Lewis           Hamilton             British          HAM    6
+##   podiums.y driverGivenName.y driverFamilyName.y driverNationality.y
+## 1        97             Lewis           Hamilton             British
+## 2        97             Lewis           Hamilton             British
+## 3        97             Lewis           Hamilton             British
+## 4         1             Kevin          Magnussen              Danish
+## 5        10           Charles            Leclerc          Monegasque
+##   drivercode.y id.y
+## 1          HAM    6
+## 2          HAM    6
+## 3          HAM    6
+## 4          MAG    7
+## 5          LEC    9
+</code></pre>
+<p>The edges data frame needs from and to columns (driverId’s) and a hover title (Number of podiums shared)</p>
+<pre><code class="language-r">edges &lt;- data.frame(from=results_combo_melt_count_edit_ids2$id.x,to=results_combo_melt_count_edit_ids2$id.y,title=paste(results_combo_melt_count_edit_ids2$Freq,&quot;shared podiums&quot;,sep=&quot; &quot;))
+head(edges,5)
+</code></pre>
+<pre><code>##   from to             title
+## 1    1  6  2 shared podiums
+## 2    2  6 35 shared podiums
+## 3    5  6  1 shared podiums
+## 4    3  7  1 shared podiums
+## 5    6  9  8 shared podiums
+</code></pre>
+<p>All that remains is to launch the visualisation!</p>
+<pre><code class="language-r">visNetwork(nodes,edges,height=&quot;600px&quot;,width=&quot;100%&quot;) %&gt;% visEdges(color = list(color = &quot;lightblue&quot;, highlight = &quot;red&quot;, smooth = FALSE))
+</code></pre>
+<div id="htmlwidget-1" style="width:100%;height:600px;" class="visNetwork html-widget "></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"nodes":{"id":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],"label":["alonso","bottas","button","gasly","grosjean","hamilton","kevin_magnussen","kvyat","leclerc","massa","max_verstappen","perez","raikkonen","ricciardo","rosberg","sainz","stroll","vettel"],"title":["Fernando Alonso - 2 podiums","Valtteri Bottas - 45 podiums","Jenson Button - 1 podiums","Pierre Gasly - 1 podiums","Romain Grosjean - 1 podiums","Lewis Hamilton - 97 podiums","Kevin Magnussen - 1 podiums","Daniil Kvyat - 3 podiums","Charles Leclerc - 10 podiums","Felipe Massa - 5 podiums","Max Verstappen - 31 podiums","Sergio Pérez - 5 podiums","Kimi Räikkönen - 26 podiums","Daniel Ricciardo - 29 podiums","Nico Rosberg - 46 podiums","Carlos Sainz - 1 podiums","Lance Stroll - 1 podiums","Sebastian Vettel - 58 podiums"],"value":[2,45,1,1,1,97,1,3,10,5,31,5,26,29,46,1,1,58]},"edges":{"from":[1,2,5,3,6,2,6,2,6,4,2,8,9,6,2,6,11,12,1,8,13,6,12,2,11,2,13,5,3,7,10,11,14,12,6,1,8,4,11,2,14,2,8,9,10,11,14,13,12,15,6],"to":[6,6,6,7,9,9,10,10,11,11,11,11,11,12,13,13,13,13,14,14,14,14,14,14,14,15,15,15,15,15,15,15,15,15,15,15,15,16,16,17,17,18,18,18,18,18,18,18,18,18,18],"title":["2 shared podiums","35 shared podiums","1 shared podiums","1 shared podiums","8 shared podiums","7 shared podiums","5 shared podiums","1 shared podiums","21 shared podiums","1 shared podiums","8 shared podiums","1 shared podiums","3 shared podiums","4 shared podiums","8 shared podiums","16 shared podiums","8 shared podiums","1 shared podiums","1 shared podiums","1 shared podiums","3 shared podiums","20 shared podiums","1 shared podiums","7 shared podiums","4 shared podiums","6 shared podiums","4 shared podiums","1 shared podiums","1 shared podiums","1 shared podiums","3 shared podiums","4 shared podiums","11 shared podiums","2 shared podiums","40 shared podiums","1 shared podiums","1 shared podiums","1 shared podiums","1 shared podiums","1 shared podiums","1 shared podiums","17 shared podiums","3 shared podiums","2 shared podiums","1 shared podiums","11 shared podiums","9 shared podiums","12 shared podiums","2 shared podiums","17 shared podiums","42 shared podiums"]},"nodesToDataframe":true,"edgesToDataframe":true,"options":{"width":"100%","height":"100%","nodes":{"shape":"dot"},"manipulation":{"enabled":false},"edges":{"color":{"color":"lightblue","highlight":"red","smooth":false}}},"groups":null,"width":"100%","height":"600px","idselection":{"enabled":false},"byselection":{"enabled":false},"main":null,"submain":null,"footer":null,"background":"rgba(0, 0, 0, 0)"},"evals":[],"jsHooks":[]}</script>
+<h2 id="conclusion">Conclusion</h2>
+<p>XML and JSON formatting is very different than data frames, however with some powerful tools the data can be transformed into R-friendly data frames for further processing and visualisation. The real power in visualisations is making them interactive using RShiny.</p>
+<h2 id="housekeeping">Housekeeping</h2>
+<p>This is an <a href="http://rmarkdown.rstudio.com">R Markdown</a> Notebook. When you execute code within the notebook, the results appear beneath the code.</p>
+<p>Try executing this chunk by clicking the <em>Run</em> button within the chunk or by placing your cursor inside it and pressing <em>Ctrl+Shift+Enter</em>.</p>
+<p>Add a new chunk by clicking the <em>Insert Chunk</em> button on the toolbar or by pressing <em>Ctrl+Alt+I</em>.</p>
+<p>When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the <em>Preview</em> button or press <em>Ctrl+Shift+K</em> to preview the HTML file).</p>
+<p>The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike <em>Knit</em>, <em>Preview</em> does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.</p>
+
+    </div>
+  </article>
+
+  
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" alt="Img link to Hugo website" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/r.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/languages/yaml.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+<script src="/js/math-code.js"></script>
+<script async src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+    
+  </body>
+</html>
+
