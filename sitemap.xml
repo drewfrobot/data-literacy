@@ -2,43 +2,43 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>/about/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/about/</loc>
     <lastmod>2023-06-26T16:12:19+08:00</lastmod>
   </url><url>
-    <loc>/categories/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/categories/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/tags/data/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/tags/data/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/tags/json/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/tags/json/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/post/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/post/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/categories/r/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/categories/r/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/tags/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/tags/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/tags/xml/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/tags/xml/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/</loc>
     <lastmod>2019-07-03T11:00:00+08:00</lastmod>
   </url><url>
-    <loc>/tags/narrow/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/tags/narrow/</loc>
     <lastmod>2019-07-03T10:00:00+08:00</lastmod>
   </url><url>
-    <loc>/tags/wide/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/tags/wide/</loc>
     <lastmod>2019-07-03T10:00:00+08:00</lastmod>
   </url><url>
-    <loc>/2019/07/03/wide-versus-narrow-data-format-using-r/</loc>
+    <loc>https://drewfrobot.github.io/data-literacy/2019/07/03/wide-versus-narrow-data-format-using-r/</loc>
     <lastmod>2019-07-03T10:00:00+08:00</lastmod>
   </url>
 </urlset>

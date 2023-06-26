@@ -1,44 +1,55 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Data Literacy</title>
-    <link>/</link>
-    <description>Recent content on Data Literacy</description>
+    <title>Tags on Data Literacy</title>
+    <link>https://drewfrobot.github.io/data-literacy/tags/</link>
+    <description>Recent content in Tags on Data Literacy</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Wed, 03 Jul 2019 11:00:00 +0800</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 03 Jul 2019 11:00:00 +0800</lastBuildDate><atom:link href="https://drewfrobot.github.io/data-literacy/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>About</title>
-      <link>/about/</link>
-      <pubDate>Mon, 26 Jun 2023 16:12:19 +0800</pubDate>
-      
-      <guid>/about/</guid>
-      <description>A website and blog exploring data literacy concepts.
-The site provides rendered web versions of the Jupyter and R Notebooks found in the accompanying Data Literacy workshops repository
-Licenses
-The text, images, data, documentation and general web content, unless stated otherwise, is licensed Creative Commons Attribution-ShareAlike 4.0 International. The R code is licensed BSD-3-clause.
-The vis.js community edition code and libraries are licenced under two licences; the Apache 2.0 License and the MIT License.</description>
-    </item>
-    
-    <item>
-      <title>XML and JSON Format Data - Formula 1 Podiums using R</title>
-      <link>/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/</link>
+      <title>DATA</title>
+      <link>https://drewfrobot.github.io/data-literacy/tags/data/</link>
       <pubDate>Wed, 03 Jul 2019 11:00:00 +0800</pubDate>
       
-      <guid>/2019/07/03/xml-and-json-format-data-formula-1-podiums-using-r/</guid>
-      <description>A lot of data available on the web, via download but more particularly via API’s, is in XML or JSON format. These formats are not tabular like data frames or tables, but are hierarchical, serialised, and a little trickier to work with. They are not unlike the list structure in R, consisting of lists of lists and can be deeply nested.
-The purpose of this notebook is to import XML and JSON format data into R and transform it into data frame format to use with the regular suite of tools available in R.</description>
+      <guid>https://drewfrobot.github.io/data-literacy/tags/data/</guid>
+      <description></description>
     </item>
     
     <item>
-      <title>Wide versus Narrow Data Format - Using R</title>
-      <link>/2019/07/03/wide-versus-narrow-data-format-using-r/</link>
+      <title>JSON</title>
+      <link>https://drewfrobot.github.io/data-literacy/tags/json/</link>
+      <pubDate>Wed, 03 Jul 2019 11:00:00 +0800</pubDate>
+      
+      <guid>https://drewfrobot.github.io/data-literacy/tags/json/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>XML</title>
+      <link>https://drewfrobot.github.io/data-literacy/tags/xml/</link>
+      <pubDate>Wed, 03 Jul 2019 11:00:00 +0800</pubDate>
+      
+      <guid>https://drewfrobot.github.io/data-literacy/tags/xml/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>NARROW</title>
+      <link>https://drewfrobot.github.io/data-literacy/tags/narrow/</link>
       <pubDate>Wed, 03 Jul 2019 10:00:00 +0800</pubDate>
       
-      <guid>/2019/07/03/wide-versus-narrow-data-format-using-r/</guid>
-      <description>This workflow explores wide and narrow data formats, identifies in which circumstances each is useful and how to easily convert data from one to the other and back again.
-Setup First up we need to extend base R by installing/loading some libraries.
-if (!require(&#39;ggplot2&#39;)) {install.packages(&#39;ggplot2&#39;)library(&#39;ggplot2&#39;)}if (!require(&#39;curl&#39;)) {install.packages(&#39;curl&#39;)library(&#39;curl&#39;)}if (!require(&#39;reshape2&#39;)) {install.packages(&#39;reshape2&#39;)library(&#39;reshape2&#39;)}Workflow - Library Statistics Let&amp;rsquo;s take the example of a hypothetical Library, and look at the statistics the front desk might collect.</description>
+      <guid>https://drewfrobot.github.io/data-literacy/tags/narrow/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>WIDE</title>
+      <link>https://drewfrobot.github.io/data-literacy/tags/wide/</link>
+      <pubDate>Wed, 03 Jul 2019 10:00:00 +0800</pubDate>
+      
+      <guid>https://drewfrobot.github.io/data-literacy/tags/wide/</guid>
+      <description></description>
     </item>
     
   </channel>
